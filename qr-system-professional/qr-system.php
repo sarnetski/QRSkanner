@@ -1166,13 +1166,22 @@ class QR_System_Professional {
         $imported_count = 0;
         $skipped_count = 0;
         $line_number = 0;
+        $invalid_lines = array();
         
         while (($line = fgets($handle)) !== false) {
             $line_number++;
-            $code = trim($line);
-            
+            $raw_code = trim($line);
+
             // Pomiń puste linie
-            if (empty($code)) {
+            if (empty($raw_code)) {
+                continue;
+            }
+
+            $code = sanitize_text_field($raw_code);
+
+            // Walidacja kodu: dozwolone znaki oraz długość
+            if (!preg_match('/^[A-Za-z0-9_-]+$/', $code) || strlen($code) > 50) {
+                $invalid_lines[] = "Linia {$line_number}: {$raw_code}";
                 continue;
             }
             
@@ -1212,15 +1221,30 @@ class QR_System_Professional {
         fclose($handle);
         
         // Dodaj notice z wynikami
-        add_action('admin_notices', function() use ($imported_count, $skipped_count) {
-            if ($imported_count > 0) {
+        add_action('admin_notices', function() use ($imported_count, $skipped_count, $invalid_lines) {
+            $invalid_count = count($invalid_lines);
+
+            if ($imported_count > 0 || $skipped_count > 0) {
                 echo '<div class="notice notice-success"><p>';
-                echo "Pomyślnie zaimportowano {$imported_count} kodów QR.";
+                if ($imported_count > 0) {
+                    echo "Pomyślnie zaimportowano {$imported_count} kodów QR.";
+                }
                 if ($skipped_count > 0) {
                     echo " Pominięto {$skipped_count} duplikatów.";
                 }
+                if ($invalid_count > 0) {
+                    echo " Wykryto {$invalid_count} nieprawidłowych wierszy.";
+                }
                 echo '</p></div>';
-            } else {
+            }
+
+            if ($invalid_count > 0) {
+                echo '<div class="notice notice-error"><p>'; 
+                echo 'Nieprawidłowe wiersze: ' . implode(', ', array_map('esc_html', $invalid_lines));
+                echo '</p></div>';
+            }
+
+            if ($imported_count === 0 && $skipped_count === 0 && $invalid_count === 0) {
                 echo '<div class="notice notice-warning"><p>Nie zaimportowano żadnych kodów. Sprawdź plik CSV.</p></div>';
             }
         });
