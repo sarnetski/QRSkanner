@@ -3,7 +3,7 @@
  * Plugin Name: QR-System Professional
  * Plugin URI: https://szymonsarnecki.pl/
  * Description: Profesjonalny system kodów QR dla franczyz. Zarządzanie kodami rabatowymi, skanowanie i zaawansowane statystyki.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Szymon Sarnecki
  * Author URI: https://szymonsarnecki.pl/
  * License: GPL v2 or later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definicje stałych
-define('QR_SYSTEM_VERSION', '1.0.0');
+define('QR_SYSTEM_VERSION', '1.0.1');
 define('QR_SYSTEM_PLUGIN_FILE', __FILE__);
 define('QR_SYSTEM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('QR_SYSTEM_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -397,8 +397,8 @@ class QR_System_Professional {
     }
     
     public function frontend_scripts() {
-        if (is_page() && has_shortcode(get_post()->post_content, 'qr_scanner')) {
-            wp_enqueue_script('html5-qrcode', 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js', array(), '2.3.8', true);
+        if (is_page('skanowanie') || (is_page() && has_shortcode(get_post()->post_content, 'qr_scanner'))) {
+            wp_enqueue_script('html5-qrcode', QR_SYSTEM_PLUGIN_URL . 'assets/html5-qrcode.min.js', array(), '2.3.8', true);
             wp_enqueue_script('qr-scanner', QR_SYSTEM_PLUGIN_URL . 'assets/scanner.js', array('jquery'), QR_SYSTEM_VERSION, true);
             wp_enqueue_style('qr-scanner', QR_SYSTEM_PLUGIN_URL . 'assets/scanner.css', array(), QR_SYSTEM_VERSION);
             
