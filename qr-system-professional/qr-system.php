@@ -108,10 +108,7 @@ class QR_System_Professional {
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
-        // Usuń istniejące tabele jeśli istnieją (dla pełnego reset)
-        $this->wpdb->query("DROP TABLE IF EXISTS {$this->table_scans}");
-        $this->wpdb->query("DROP TABLE IF EXISTS {$this->table_codes}");
-        $this->wpdb->query("DROP TABLE IF EXISTS {$this->table_groups}");
+        // Definicje tabel - dbDelta zadba o tworzenie i aktualizacje
         
         // Tabela grup (najpierw, bo inne tabele się do niej odnoszą)
         $sql_groups = "CREATE TABLE {$this->table_groups} (
@@ -169,23 +166,21 @@ class QR_System_Professional {
             KEY location_idx (location)
         ) $charset_collate;";
         
-        // Stwórz tabele w odpowiedniej kolejności
-        $result1 = $this->wpdb->query($sql_groups);
-        $result2 = $this->wpdb->query($sql_codes);
-        $result3 = $this->wpdb->query($sql_scans);
-        
-        // Log błędów jeśli wystąpią
-        if (!$result1 || !$result2 || !$result3) {
-            error_log('QR System: Błąd tworzenia tabel. Groups: ' . ($result1 ? 'OK' : 'BŁĄD') . 
-                     ', Codes: ' . ($result2 ? 'OK' : 'BŁĄD') . 
-                     ', Scans: ' . ($result3 ? 'OK' : 'BŁĄD'));
+        // Utwórz lub zaktualizuj tabele bez usuwania danych
+        dbDelta($sql_groups);
+        dbDelta($sql_codes);
+        dbDelta($sql_scans);
+
+        // Dodaj dane startowe tylko przy pierwszej instalacji
+        $groups_count = $this->wpdb->get_var("SELECT COUNT(*) FROM {$this->table_groups}");
+        if ($groups_count == 0) {
+            $this->insert_default_groups();
         }
-        
-        // Dodaj domyślne grupy
-        $this->insert_default_groups();
-        
-        // Dodaj przykładowe kody dla testów
-        $this->insert_sample_codes();
+
+        $codes_count = $this->wpdb->get_var("SELECT COUNT(*) FROM {$this->table_codes}");
+        if ($codes_count == 0) {
+            $this->insert_sample_codes();
+        }
     }
     
     private function insert_default_groups() {
